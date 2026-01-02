@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-Time Attendance</title>
+</head>
+<body>
+    <h1>Real-Time Attendance</h1>
+    <p>Camera will start and attendance will be marked automatically as students pass by.</p>
+    <p>Press 'q' to stop the session manually.</p>
+    <form method="post" action="{% url 'staff_real_time_attendance' %}">
+        {% csrf_token %}
+        <button type="submit">Start Real-Time Attendance</button>
+    </form>
+</body>
+</html>

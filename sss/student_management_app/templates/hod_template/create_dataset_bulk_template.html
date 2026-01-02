@@ -1,0 +1,187 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+Face Enrollment - {{ student.first_name }} {{ student.last_name }}
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Face Enrollment ({{ current }}/{{ total }})</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <p>Currently enrolling: <strong>{{ student.first_name }} {{ student.last_name }}</strong> ({{ student.admission_number }})</p>
+                            <p>Please capture multiple images of the student's face from different angles for better recognition.</p>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="text-center">
+                                    {% if student.profile_pic %}
+                                    <img src="{{ student.profile_pic.url }}" alt="Profile Pic" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                                    {% else %}
+                                    <img src="/static/dist/img/user2-160x160.jpg" alt="Default Profile" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="camera_container" class="text-center">
+                                    <video id="video" width="400" height="300" autoplay></video>
+                                    <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <button id="capture" class="btn btn-primary">Capture Image</button>
+                                    <button id="next_student" class="btn btn-success">Next Student</button>
+                                    <button id="skip_student" class="btn btn-warning">Skip Student</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-info">
+                                        <h4 class="card-title">Captured Images</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="captured_images" class="row">
+                                            <!-- Captured images will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function() {
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let context = canvas.getContext('2d');
+        let capturedCount = 0;
+        
+        // Start the camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                console.log("An error occurred: " + err);
+                alert("Error accessing camera. Please make sure your camera is connected and permissions are granted.");
+            });
+        
+        // Capture button click
+        $('#capture').click(function() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            let imageData = canvas.toDataURL('image/jpeg');
+            
+            // Send the image to the server
+            $.ajax({
+                url: "{% url 'save_face_image' %}",
+                type: "POST",
+                data: {
+                    'student_id': "{{ student.id }}",
+                    'image_data': imageData,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        capturedCount++;
+                        
+                        // Add the captured image to the display
+                        $('#captured_images').append(`
+                            <div class="col-md-3 mb-3">
+                                <div class="card">
+                                    <img src="${imageData}" class="card-img-top" alt="Captured Image">
+                                    <div class="card-body p-2 text-center">
+                                        <small class="text-muted">Image ${capturedCount}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                        
+                        // Enable next button after capturing at least 3 images
+                        if (capturedCount >= 3) {
+                            $('#next_student').prop('disabled', false);
+                        }
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('An error occurred while saving the image');
+                    console.error(error);
+                }
+            });
+        });
+        
+        // Next student button click
+        $('#next_student').click(function() {
+            if (capturedCount < 3) {
+                if (!confirm('You have captured fewer than 3 images. This may affect recognition accuracy. Continue anyway?')) {
+                    return;
+                }
+            }
+            
+            // Proceed to the next student
+            $.ajax({
+                url: "{% url 'next_enrollment_student' %}",
+                type: "POST",
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        if (response.redirect) {
+                            window.location.href = response.redirect;
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                }
+            });
+        });
+        
+        // Skip student button click
+        $('#skip_student').click(function() {
+            if (confirm('Are you sure you want to skip this student? No face data will be saved.')) {
+                $.ajax({
+                    url: "{% url 'next_enrollment_student' %}",
+                    type: "POST",
+                    data: {
+                        'skip': 'true',
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            if (response.redirect) {
+                                window.location.href = response.redirect;
+                            } else {
+                                window.location.reload();
+                            }
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Initially disable next button until enough images are captured
+        $('#next_student').prop('disabled', true);
+    });
+</script>
+{% endblock custom_js %}

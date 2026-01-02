@@ -1,0 +1,21 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+Edit Stream
+{% endblock page_title %}
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <form role="form" method="POST" action="{% url 'edit_stream_save' %}">
+            {% csrf_token %}
+            <!-- form fields for editing stream -->
+            <input type="hidden" name="stream_id" value="{{ stream.id }}">
+            <div class="form-group">
+                <label for="stream_name">Stream Name</label>
+                <input type="text" class="form-control" id="stream_name" name="stream_name" value="{{ stream.name }}" required>
+            </div>
+            <!-- other fields as needed -->
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+</section>
+{% endblock main_content %}

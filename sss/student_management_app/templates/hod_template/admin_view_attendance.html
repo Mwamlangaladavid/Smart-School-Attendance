@@ -1,0 +1,819 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+View Attendance Dashboard
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <!-- Filter Card -->
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-filter"></i>
+                    Attendance Filters
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="fas fa-graduation-cap"></i> Grade</label>
+                            <select class="form-control select2" id="grade_select" style="width: 100%;">
+                                <option value="">Select Grade</option>
+                                {% for grade in grades %}
+                                <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="fas fa-users"></i> Stream</label>
+                            <select class="form-control select2" id="stream_select" style="width: 100%;" disabled>
+                                <option value="">Select Stream</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-alt"></i> Academic Year</label>
+                            <select class="form-control select2" id="academic_year_select" style="width: 100%;">
+                                <option value="">Select Academic Year</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year.id }}">{{ year.academic_start_year }} - {{ year.academic_end_year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="fas fa-filter"></i> Attendance Range</label>
+                            <select class="form-control" id="attendance_range">
+                                <option value="">All Attendance Rates</option>
+                                <option value="90-100">Excellent (90-100%)</option>
+                                <option value="75-89">Good (75-89%)</option>
+                                <option value="60-74">Average (60-74%)</option>
+                                <option value="0-59">Poor (Below 60%)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-week"></i> Day of Week</label>
+                            <select class="form-control" id="day_of_week">
+                                <option value="">All Days</option>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6">Saturday</option>
+                                <option value="0">Sunday</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="fas fa-user-graduate"></i> Student Filter</label>
+                            <select class="form-control select2" id="student_filter" style="width: 100%;">
+                                <option value="">All Students</option>
+                                <!-- Student options will be loaded dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label><i class="fas fa-chart-line"></i> Visualization Options</label>
+                            <div class="d-flex">
+                                <div class="custom-control custom-checkbox mr-3">
+                                    <input class="custom-control-input" type="checkbox" id="show_trend_line" value="1">
+                                    <label for="show_trend_line" class="custom-control-label">Show Trend Line</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mr-3">
+                                    <input class="custom-control-input" type="checkbox" id="compare_streams" value="1">
+                                    <label for="compare_streams" class="custom-control-label">Compare Streams</label>
+                                </div>
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" id="highlight_weekends" value="1">
+                                    <label for="highlight_weekends" class="custom-control-label">Highlight Weekends</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-group" style="width: 100%;">
+                            <button id="fetch_attendance" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Fetch Attendance
+                            </button>
+                            <button id="reset_filters" class="btn btn-secondary ml-2">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div id="results_section" style="display: none;">
+            <!-- Summary Card -->
+            <div class="card card-success card-outline">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-pie"></i>
+                        Attendance Summary
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6 col-12">
+                            <div class="info-box bg-info">
+                                <span class="info-box-icon"><i class="fas fa-calendar-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Records</span>
+                                    <span class="info-box-number" id="total_records">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 col-12">
+                            <div class="info-box bg-success">
+                                <span class="info-box-icon"><i class="fas fa-user-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Average Attendance</span>
+                                    <span class="info-box-number" id="avg_attendance">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 col-12">
+                            <div class="info-box bg-warning">
+                                <span class="info-box-icon"><i class="fas fa-calendar-day"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Date Range</span>
+                                    <span class="info-box-number" id="date_range_summary">N/A</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 col-12">
+                            <div class="info-box bg-danger">
+                                <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Low Attendance Days</span>
+                                    <span class="info-box-number" id="low_attendance_days">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="chart-container" style="position: relative; height:250px;">
+                                <canvas id="attendance_trend_chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container" style="position: relative; height:250px;">
+                                <canvas id="attendance_distribution_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        {% comment %} Removed attendance records table and related UI as per user request {% endcomment %}
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loading_indicator" style="display: none;">
+            <div class="d-flex justify-content-center mt-5 mb-5">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- No Data Message -->
+        <div id="no_data_message" class="alert alert-info" style="display: none;">
+            <h5><i class="icon fas fa-info"></i> No Data Found!</h5>
+            No attendance records match your selected criteria. Please try different filters.
+        </div>
+    </div>
+    
+    <!-- Attendance Details Modal -->
+    <div class="modal fade" id="attendance_details_modal">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h4 class="modal-title">Attendance Details</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="attendance_details_content">
+                        <!-- Details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="export_details_btn">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}
+
+{% block custom_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Select2 -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        $('.select2').select2({
+            theme: 'bootstrap4'
+        });
+        
+        // Load streams when grade is selected
+        $('#grade_select').change(function() {
+            var grade_id = $(this).val();
+            if(grade_id) {
+                $('#stream_select').prop('disabled', true);
+                $('#stream_select').html('<option value="">Loading streams...</option>');
+                
+                $.ajax({
+                    url: "{% url 'get_streams_by_grade' %}",
+                    type: "POST",
+                    data: {
+                        grade_id: grade_id,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(data) {
+                        $('#stream_select').html('<option value="">All Streams</option>');
+                        data = JSON.parse(data);
+                        
+                        if(data.length > 0) {
+                            $.each(data, function(index, stream) {
+                                $('#stream_select').append('<option value="' + stream.id + '">' + stream.stream_name + '</option>');
+                            });
+                        }
+                        $('#stream_select').prop('disabled', false);
+                    },
+                    error: function() {
+                        $('#stream_select').html('<option value="">Error loading streams</option>');
+                        $('#stream_select').prop('disabled', false);
+                    }
+                });
+            } else {
+                $('#stream_select').html('<option value="">Select Stream</option>');
+                $('#stream_select').prop('disabled', true);
+            }
+        });
+        
+        // Fetch attendance records
+        $('#fetch_attendance').click(function() {
+            var grade_id = $('#grade_select').val();
+            var stream_id = $('#stream_select').val();
+            var academic_year_id = $('#academic_year_select').val();
+            var date_range = $('#date_range').val();
+            var sort_by = $('#sort_by').val();
+            
+            if(!grade_id || !academic_year_id) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Information',
+                    text: 'Please select both Grade and Academic Year'
+                });
+                return;
+            }
+            
+            // Show loading indicator
+            $('#results_section').hide();
+            $('#no_data_message').hide();
+            $('#loading_indicator').show();
+            
+            // Extract date range if provided
+            var start_date = '';
+            var end_date = '';
+            if(date_range) {
+                var dates = date_range.split(' - ');
+                start_date = dates[0];
+                end_date = dates[1];
+            }
+            
+            $.ajax({
+                url: "{% url 'get_attendance_records' %}",
+                type: "POST",
+                data: {
+                    grade_id: grade_id,
+                    stream_id: stream_id,
+                    academic_year_id: academic_year_id,
+                    start_date: start_date,
+                    end_date: end_date,
+                    sort_by: sort_by,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(data) {
+                    // Hide loading indicator
+                    $('#loading_indicator').hide();
+                    
+                    try {
+                        data = JSON.parse(data);
+                        
+                        if(data.length > 0) {
+                            // Update summary statistics
+                            updateSummaryStatistics(data);
+                            
+                            // Populate attendance table
+                            populateAttendanceTable(data);
+                            
+                            // Show results section
+                            $('#results_section').show();
+                        } else {
+                            $('#no_data_message').show();
+                        }
+                    } catch(e) {
+                        console.error("Error parsing JSON:", e);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to process attendance data'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // Hide loading indicator
+                    $('#loading_indicator').hide();
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to fetch attendance data: ' + error
+                    });
+                }
+            });
+        });
+        
+        // View attendance details
+        $(document).on('click', '.view-details', function() {
+            var attendance_id = $(this).data('id');
+            var date = $(this).data('date');
+            var stream = $(this).data('stream');
+            
+            // Update modal title
+            $('#attendance_details_modal .modal-title').text('Attendance Details: ' + date + ' - ' + stream);
+            
+            // Show modal with loading indicator
+            $('#attendance_details_content').html('<div class="d-flex justify-content-center mt-3 mb-3"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div></div>');
+            $('#attendance_details_modal').modal('show');
+            
+            // Fetch attendance details
+            $.ajax({
+                url: "{% url 'get_attendance_details' %}",
+                type: "POST",
+                data: {
+                    attendance_id: attendance_id,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(data) {
+                    try {
+                        data = JSON.parse(data);
+                        
+                        // Prepare HTML for attendance details
+                        var html = '<div class="row">';
+                        
+                        // Present students
+                        html += '<div class="col-md-6"><div class="card card-success"><div class="card-header">';
+                        html += '<h3 class="card-title"><i class="fas fa-user-check"></i> Present Students (' + data.filter(d => d.status === '1').length + ')</h3>';
+                        html += '</div><div class="card-body p-0"><table class="table table-striped"><thead><tr>';
+                        html += '<th style="width: 10px">#</th><th>Student Name</th><th>Admission Number</th></tr></thead><tbody>';
+                        
+                        var presentCount = 0;
+                        data.forEach(function(item, index) {
+                            if(item.status === '1') {
+                                presentCount++;
+                                html += '<tr><td>' + presentCount + '</td><td>' + item.student_name + '</td><td>' + (item.admission_number || 'N/A') + '</td></tr>';
+                            }
+                        });
+                        
+                        if(presentCount === 0) {
+                            html += '<tr><td colspan="3" class="text-center">No students present</td></tr>';
+                        }
+                        
+                        html += '</tbody></table></div></div></div>';
+                        
+                        // Absent students
+                        html += '<div class="col-md-6"><div class="card card-danger"><div class="card-header">';
+                        html += '<h3 class="card-title"><i class="fas fa-user-times"></i> Absent Students (' + data.filter(d => d.status === '0').length + ')</h3>';
+                        html += '</div><div class="card-body p-0"><table class="table table-striped"><thead><tr>';
+                        html += '<th style="width: 10px">#</th><th>Student Name</th><th>Admission Number</th></tr></thead><tbody>';
+                        
+                        var absentCount = 0;
+                        data.forEach(function(item, index) {
+                            if(item.status === '0') {
+                                absentCount++;
+                                html += '<tr><td>' + absentCount + '</td><td>' + item.student_name + '</td><td>' + (item.admission_number || 'N/A') + '</td></tr>';
+                            }
+                        });
+                        
+                        if(absentCount === 0) {
+                            html += '<tr><td colspan="3" class="text-center">No students absent</td></tr>';
+                        }
+                        
+                        html += '</tbody></table></div></div></div>';
+                        
+                        // Attendance summary
+                        html += '<div class="col-12 mt-3"><div class="card"><div class="card-header bg-primary">';
+                        html += '<h3 class="card-title"><i class="fas fa-chart-pie"></i> Attendance Summary</h3>';
+                        html += '</div><div class="card-body">';
+                        
+                        // Calculate attendance percentage
+                        var totalStudents = data.length;
+                        var presentPercentage = totalStudents > 0 ? (presentCount / totalStudents * 100).toFixed(1) : 0;
+                        var absentPercentage = totalStudents > 0 ? (absentCount / totalStudents * 100).toFixed(1) : 0;
+                        
+                        html += '<div class="progress" style="height: 30px;">';
+                        html += '<div class="progress-bar bg-success" role="progressbar" style="width: ' + presentPercentage + '%">';
+                        html += 'Present: ' + presentCount + ' (' + presentPercentage + '%)';
+                        html += '</div>';
+                        html += '<div class="progress-bar bg-danger" role="progressbar" style="width: ' + absentPercentage + '%">';
+                        html += 'Absent: ' + absentCount + ' (' + absentPercentage + '%)';
+                        html += '</div>';
+                        html += '</div>';
+                        
+                        html += '</div></div></div>';
+                        
+                        html += '</div>'; // Close row
+                        
+                        $('#attendance_details_content').html(html);
+                    } catch(e) {
+                        console.error("Error parsing JSON:", e);
+                        $('#attendance_details_content').html('<div class="alert alert-danger">Failed to process attendance details</div>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#attendance_details_content').html('<div class="alert alert-danger">Failed to fetch attendance details: ' + error + '</div>');
+                }
+            });
+        });
+        
+        // Export attendance details
+        $('#export_details_btn').click(function() {
+            // Get the HTML table data
+            var tableData = document.getElementById('attendance_details_content').innerHTML;
+            
+            // Create a temporary element to convert HTML to a downloadable format
+            var a = document.createElement('a');
+            var dataType = 'data:application/vnd.ms-excel';
+            var tableHTML = tableData.replace(/ /g, '%20');
+            tableHTML = tableHTML.replace(/<i[^>]*>|<\/i>/g, ''); // Remove icons
+            
+            a.href = dataType + ', ' + tableHTML;
+            a.download = 'attendance_details_' + new Date().toISOString().slice(0,10) + '.xls';
+            a.click();
+        });
+        
+        // Table search functionality
+        $('#table_search').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $('#attendance_table tbody tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+            
+            // Update showing entries text
+            updateShowingEntries();
+        });
+        
+        // Function to update summary statistics
+        function updateSummaryStatistics(data) {
+            // Total records
+            $('#total_records').text(data.length);
+            
+            // Calculate average attendance
+            var totalAttendance = 0;
+            data.forEach(function(item) {
+                totalAttendance += parseFloat(item.present_percentage || 0);
+            });
+            var avgAttendance = data.length > 0 ? (totalAttendance / data.length).toFixed(1) : 0;
+            $('#avg_attendance').text(avgAttendance + '%');
+            
+            // Date range
+            if(data.length > 0) {
+                var dates = data.map(item => new Date(item.attendance_date));
+                var minDate = new Date(Math.min.apply(null, dates));
+                var maxDate = new Date(Math.max.apply(null, dates));
+                $('#date_range_summary').text(minDate.toLocaleDateString() + ' - ' + maxDate.toLocaleDateString());
+            } else {
+                $('#date_range_summary').text('N/A');
+            }
+            
+            // Low attendance days (below 70%)
+            var lowAttendanceDays = data.filter(item => parseFloat(item.present_percentage || 0) < 70).length;
+            $('#low_attendance_days').text(lowAttendanceDays);
+            
+            // Create attendance trend chart
+            createAttendanceTrendChart(data);
+            
+            // Create attendance distribution chart
+            createAttendanceDistributionChart(data);
+        }
+        
+        // Function to populate attendance table
+        function populateAttendanceTable(data) {
+            var tableBody = $('#attendance_table_body');
+            tableBody.empty();
+            
+            data.forEach(function(item, index) {
+                var row = '<tr>';
+                row += '<td>' + (index + 1) + '</td>';
+                row += '<td>' + formatDate(item.attendance_date) + '</td>';
+                row += '<td>' + item.stream_name + '</td>';
+                row += '<td>' + item.present_count + '</td>';
+                row += '<td>' + item.absent_count + '</td>';
+                
+                // Attendance percentage with color coding
+                var percentage = parseFloat(item.present_percentage || 0);
+                var badgeClass = percentage >= 90 ? 'success' : 
+                                 percentage >= 75 ? 'primary' : 
+                                 percentage >= 60 ? 'warning' : 'danger';
+                
+                row += '<td><span class="badge badge-' + badgeClass + '">' + percentage + '%</span></td>';
+                
+                // Actions
+                row += '<td>';
+                row += '<button class="btn btn-info btn-sm view-details mr-1" data-id="' + item.id + '" data-date="' + formatDate(item.attendance_date) + '" data-stream="' + item.stream_name + '">';
+                row += '<i class="fas fa-eye"></i> View</button>';
+
+                // Add Edit button linking to admin_edit_attendance
+                row += '<a href="/admin_edit_attendance/' + item.id + '" class="btn btn-primary btn-sm">';
+                row += '<i class="fas fa-edit"></i> Edit</a>';
+                row += '</td>';
+
+                
+                row += '</tr>';
+                tableBody.append(row);
+            });
+            
+            // Update showing entries text
+            updateShowingEntries();
+            
+            // Initialize pagination if needed
+            // This is a simplified version - for large datasets, you'd want server-side pagination
+            if(data.length > 10) {
+                initPagination(data.length);
+            } else {
+                $('#pagination').empty();
+            }
+        }
+        
+        // Function to create attendance trend chart
+        function createAttendanceTrendChart(data) {
+            // Sort data by date
+            data.sort(function(a, b) {
+                return new Date(a.attendance_date) - new Date(b.attendance_date);
+            });
+            
+            // Prepare chart data
+            var labels = data.map(item => formatDate(item.attendance_date));
+            var attendanceData = data.map(item => parseFloat(item.present_percentage || 0));
+            
+            // Destroy existing chart if it exists
+            if(window.attendanceTrendChart) {
+                window.attendanceTrendChart.destroy();
+            }
+            
+            // Create new chart
+            var ctx = document.getElementById('attendance_trend_chart').getContext('2d');
+            window.attendanceTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Attendance %',
+                        data: attendanceData,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Attendance Trend Over Time'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Attendance: ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Attendance %'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Function to create attendance distribution chart
+        function createAttendanceDistributionChart(data) {
+            // Count attendance in different ranges
+            var ranges = {
+                '90-100%': 0,
+                '75-89%': 0,
+                '60-74%': 0,
+                '0-59%': 0
+            };
+            
+            data.forEach(function(item) {
+                var percentage = parseFloat(item.present_percentage || 0);
+                if(percentage >= 90) {
+                    ranges['90-100%']++;
+                } else if(percentage >= 75) {
+                    ranges['75-89%']++;
+                } else if(percentage >= 60) {
+                    ranges['60-74%']++;
+                } else {
+                    ranges['0-59%']++;
+                }
+            });
+            
+            // Destroy existing chart if it exists
+            if(window.attendanceDistributionChart) {
+                window.attendanceDistributionChart.destroy();
+            }
+            
+            // Create new chart
+            var ctx = document.getElementById('attendance_distribution_chart').getContext('2d');
+            window.attendanceDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(ranges),
+                    datasets: [{
+                        data: Object.values(ranges),
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',  // Green for 90-100%
+                            'rgba(0, 123, 255, 0.8)',  // Blue for 75-89%
+                            'rgba(255, 193, 7, 0.8)',  // Yellow for 60-74%
+                            'rgba(220, 53, 69, 0.8)'   // Red for 0-59%
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Attendance Distribution'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var label = context.label || '';
+                                    var value = context.raw || 0;
+                                    var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    var percentage = Math.round((value / total) * 100);
+                                    return label + ': ' + value + ' days (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Function to format date
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+        
+        // Function to update showing entries text
+        function updateShowingEntries() {
+            var visibleRows = $('#attendance_table tbody tr:visible').length;
+            var totalRows = $('#attendance_table tbody tr').length;
+            $('#showing_entries').text('Showing ' + visibleRows + ' of ' + totalRows + ' entries');
+        }
+        
+        // Function to initialize pagination
+        function initPagination(totalItems) {
+            var itemsPerPage = 10;
+            var totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            var pagination = $('#pagination');
+            pagination.empty();
+            
+            // Previous button
+            pagination.append('<li class="page-item disabled"><a class="page-link" href="#" data-page="prev">&laquo;</a></li>');
+            
+            // Page numbers
+            for(var i = 1; i <= totalPages; i++) {
+                var activeClass = i === 1 ? 'active' : '';
+                pagination.append('<li class="page-item ' + activeClass + '"><a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>');
+            }
+            
+            // Next button
+            pagination.append('<li class="page-item"><a class="page-link" href="#" data-page="next">&raquo;</a></li>');
+            
+            // Handle pagination clicks
+            $('.page-link').click(function(e) {
+                e.preventDefault();
+                
+                var page = $(this).data('page');
+                var currentPage = parseInt($('#pagination .active').find('.page-link').data('page'));
+                
+                if(page === 'prev') {
+                    if(currentPage > 1) {
+                        page = currentPage - 1;
+                    } else {
+                        return;
+                    }
+                } else if(page === 'next') {
+                    if(currentPage < totalPages) {
+                        page = currentPage + 1;
+                    } else {
+                        return;
+                    }
+                }
+                
+                // Update active page
+                $('#pagination .page-item').removeClass('active');
+                $('#pagination .page-item').find('[data-page="' + page + '"]').parent().addClass('active');
+                
+                // Enable/disable prev/next buttons
+                if(page === 1) {
+                    $('#pagination .page-item').find('[data-page="prev"]').parent().addClass('disabled');
+                } else {
+                    $('#pagination .page-item').find('[data-page="prev"]').parent().removeClass('disabled');
+                }
+                
+                if(page === totalPages) {
+                    $('#pagination .page-item').find('[data-page="next"]').parent().addClass('disabled');
+                } else {
+                    $('#pagination .page-item').find('[data-page="next"]').parent().removeClass('disabled');
+                }
+                
+                // Show/hide rows
+                var startIndex = (page - 1) * itemsPerPage;
+                var endIndex = startIndex + itemsPerPage;
+                
+                $('#attendance_table tbody tr').hide();
+                $('#attendance_table tbody tr').slice(startIndex, endIndex).show();
+                
+                // Update showing entries text
+                updateShowingEntries();
+            });
+        }
+    });
+</script>
+{% endblock custom_js %}

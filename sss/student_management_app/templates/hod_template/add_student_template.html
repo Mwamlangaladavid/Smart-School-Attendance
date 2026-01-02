@@ -1,0 +1,121 @@
+{% extends 'hod_template/base_template.html' %}
+
+{% block page_title %}
+Add Student
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Add New Student</h3>
+                    </div>
+                    <form role="form" method="POST" action="{% url 'add_student_save' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>First Name</label>
+                                        <input type="text" class="form-control" name="first_name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Middle Name</label>
+                                        <input type="text" class="form-control" name="middle_name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Last Name</label>
+                                        <input type="text" class="form-control" name="last_name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Gender</label>
+                                        <select class="form-control" name="gender" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="M">Male</option>
+                                            <option value="F">Female</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date of Birth</label>
+                                        <input type="date" name="date_of_birth" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Profile Picture</label>
+                                        <input type="file" class="form-control" name="profile_pic">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Address</label>
+                                        <input type="text" name="address" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nationality</label>
+                                        <input type="text" class="form-control" name="nationality" value="Tanzanian">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Religion</label>
+                                        <input type="text" class="form-control" name="religion" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Disability</label>
+                                        <select class="form-control" name="disability">
+                                            <option value="None">None</option>
+                                            <option value="Physical">Physical</option>
+                                            <option value="Visual">Visual</option>
+                                            <option value="Hearing">Hearing</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4"></div>
+                                <div class="form-group">
+                                    <label>Grade</label>
+                                    <select class="form-control" name="grade_id" required>
+                                        <option value="">Select Grade</option>
+                                        {% for grade in grades %}
+                                        <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Stream</label>
+                                    <select class="form-control" name="stream_id" required>
+                                        <option value="">Select Stream</option>
+                                        {% for stream in streams %}
+                                        <option value="{{ stream.id }}">{{ stream.stream_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Academic Year</label>
+                                    <select class="form-control" name="academic_year_id" required>
+                                        <option value="">Select Academic Year</option>
+                                        {% for year in academic_years %}
+                                        <option value="{{ year.id }}">{{ year.academic_start_year|date:"Y" }} - {{ year.academic_end_year|date:"Y" }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">Add Student</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}

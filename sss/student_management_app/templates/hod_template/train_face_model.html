@@ -1,0 +1,148 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+Train Face Recognition Model
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Train Face Recognition Model</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <p>Training the face recognition model will:</p>
+                            <ul>
+                                <li>Process all student face images in the dataset</li>
+                                <li>Create a machine learning model to recognize students</li>
+                                <li>Enable automatic attendance marking with face recognition</li>
+                            </ul>
+                            <p>This process may take several minutes depending on the number of students.</p>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-primary">
+                                        <h5 class="card-title">Model Training</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>Train the face recognition model using all enrolled student face data.</p>
+                                        <form method="post" action="{% url 'train_model' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                                <i class="fas fa-cogs"></i> Start Training
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-success">
+                                        <h5 class="card-title">Batch Face Encoding</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>Generate face encodings for all students with profile pictures.</p>
+                                        <a href="{% url 'generate_face_encodings' %}" class="btn btn-success btn-lg btn-block">
+                                            <i class="fas fa-camera"></i> Generate Face Encodings
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-warning">
+                                        <h5 class="card-title">Model Status</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <th>Total Students</th>
+                                                <td>{{ total_students }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Students with Face Encodings</th>
+                                                <td>{{ students_with_encodings }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Last Model Training</th>
+                                                <td>
+                                                    {% if last_training_date %}
+                                                        {{ last_training_date }}
+                                                    {% else %}
+                                                        Not trained yet
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Model Status</th>
+                                                <td>
+                                                    {% if model_exists %}
+                                                        <span class="badge badge-success">Ready</span>
+                                                    {% else %}
+                                                        <span class="badge badge-danger">Not Available</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-info">
+                                        <h5 class="card-title">Instructions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>How to prepare for face recognition:</h6>
+                                        <ol>
+                                            <li>Ensure all students have clear profile pictures or have been enrolled using the camera</li>
+                                            <li>Click "Generate Face Encodings" to process all student images</li>
+                                            <li>Click "Start Training" to build the face recognition model</li>
+                                            <li>Once training is complete, staff can use face recognition for attendance</li>
+                                        </ol>
+                                        
+                                        <h6>Best practices for face recognition:</h6>
+                                        <ul>
+                                            <li>Use clear, well-lit photos of students' faces</li>
+                                            <li>Ensure the face is clearly visible with no obstructions</li>
+                                            <li>Multiple face images per student improve recognition accuracy</li>
+                                            <li>Retrain the model after adding new students or updating face data</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function() {
+        // Add any JavaScript functionality needed for this page
+        
+        // Example: Confirmation dialog before training
+        $('form').on('submit', function(e) {
+            if (!confirm('Training the model may take several minutes. Continue?')) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock custom_js %}

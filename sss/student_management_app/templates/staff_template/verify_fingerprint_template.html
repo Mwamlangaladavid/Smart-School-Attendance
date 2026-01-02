@@ -1,0 +1,173 @@
+{% extends 'staff_template/base_template.html' %}
+{% block page_title %}
+Verify Fingerprint
+{% endblock page_title %}
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Verify Fingerprint</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Stream</label>
+                            <select class="form-control" id="stream">
+                                <option value="">Select Stream</option>
+                                {% for stream in streams %}
+                                <option value="{{ stream.id }}">{{ stream.stream_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Academic Year</label>
+                            <select class="form-control" id="academic_year">
+                                <option value="">Select Academic Year</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year.id }}">{{ year.academic_year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Student</label>
+                            <select class="form-control" id="student" disabled>
+                                <option value="">Select Student</option>
+                            </select>
+                        </div>
+                        <div class="form-group text-center">
+                            <div id="fingerprint-area" class="mt-4 mb-4" style="display: none;">
+                                <!-- <img src="/static/dist/img/fingerprint-scan.gif" alt="Place finger on scanner" style="max-width: 200px;"> -->
+                                <h4 class="mt-3">Place finger on scanner</h4>
+                            </div>
+                            <button type="button" id="scan-fingerprint" class="btn btn-primary btn-lg" disabled>
+                                <i class="fas fa-fingerprint"></i> Scan Fingerprint
+                            </button>
+                        </div>
+                        <div id="verification-result" class="alert" style="display: none;"></div>
+                        <div class="form-group text-center mt-4">
+                            <button type="button" id="proceed-to-face" class="btn btn-success btn-lg" style="display: none;">
+                                <i class="fas fa-camera"></i> Proceed to Face Recognition
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+$(document).ready(function() {
+    // When stream and academic year are selected, enable student selection
+    $('#stream, #academic_year').change(function() {
+        var stream_id = $('#stream').val();
+        var academic_year_id = $('#academic_year').val();
+        
+        if (stream_id && academic_year_id) {
+            // Fetch students for this stream and academic year
+            $.ajax({
+                type: 'POST',
+                url: '{% url "get_students" %}',
+                data: {
+                    stream: stream_id,
+                    academic_year: academic_year_id
+                },
+                success: function(data) {
+                    var students = JSON.parse(data);
+                    var options = '<option value="">Select Student</option>';
+                    
+                    for (var i = 0; i < students.length; i++) {
+                        options += '<option value="' + students[i].id + '">' + students[i].name + '</option>';
+                    }
+                    
+                    $('#student').html(options);
+                    $('#student').prop('disabled', false);
+                }
+            });
+        } else {
+            $('#student').html('<option value="">Select Student</option>');
+            $('#student').prop('disabled', true);
+            $('#scan-fingerprint').prop('disabled', true);
+        }
+    });
+    
+    // Enable scan button when student is selected
+    $('#student').change(function() {
+        if ($(this).val()) {
+            $('#scan-fingerprint').prop('disabled', false);
+        } else {
+            $('#scan-fingerprint').prop('disabled', true);
+        }
+    });
+    
+    // Scan fingerprint button click handler
+    $('#scan-fingerprint').click(function() {
+        var stream_id = $('#stream').val();
+        var academic_year_id = $('#academic_year').val();
+        var student_id = $('#student').val();
+        
+        if (!stream_id || !academic_year_id || !student_id) {
+            alert('Please select stream, academic year, and student');
+            return;
+        }
+        
+        // Show fingerprint scanning UI
+        $('#fingerprint-area').show();
+        $(this).prop('disabled', true);
+        
+        // Simulate fingerprint scanning (in a real app, this would interface with actual hardware)
+        setTimeout(function() {
+            // Simulate sending fingerprint data to server
+            $.ajax({
+                type: 'POST',
+                url: '{% url "verify_fingerprint" %}',
+                data: {
+                    stream_id: stream_id,
+                    academic_year_id: academic_year_id,
+                    student_id: student_id,
+                    fingerprint_data: 'simulated-fingerprint-data'  // This would be actual data in a real implementation
+                },
+                success: function(response) {
+                    $('#fingerprint-area').hide();
+                    
+                    if (response.status === 'success') {
+                        $('#verification-result').removeClass('alert-danger').addClass('alert-success');
+                        $('#verification-result').html('<strong>Success!</strong> ' + response.message + '<br>Student: ' + response.student.name);
+                        $('#verification-result').show();
+                        
+                        // Enable proceed button
+                        $('#proceed-to-face').show();
+                    } else {
+                        $('#verification-result').removeClass('alert-success').addClass('alert-danger');
+                        $('#verification-result').html('<strong>Error!</strong> ' + response.message);
+                        $('#verification-result').show();
+                        $('#scan-fingerprint').prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    $('#fingerprint-area').hide();
+                    $('#verification-result').removeClass('alert-success').addClass('alert-danger');
+                    $('#verification-result').html('<strong>Error!</strong> Failed to communicate with server');
+                    $('#verification-result').show();
+                    $('#scan-fingerprint').prop('disabled', false);
+                }
+            });
+        }, 3000); // Simulate 3 second scan
+    });
+    
+    // Proceed to face recognition
+    $('#proceed-to-face').click(function() {
+        var stream_id = $('#stream').val();
+        var academic_year_id = $('#academic_year').val();
+        
+        // Redirect to face recognition page with verified fingerprint flag
+        window.location.href = '{% url "staff_take_attendance_with_face" %}?stream_id=' + stream_id + 
+                              '&academic_year_id=' + academic_year_id + 
+                              '&fingerprint_verified=true';
+    });
+});
+</script>
+{% endblock main_content %}
+

@@ -1,0 +1,1066 @@
+{% extends 'staff_template/base_template.html' %}
+{% block page_title %}
+Take Attendance with Face Recognition
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Face Recognition & Fingerprint Attendance</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <p>Instructions:</p>
+                            <ul>
+                                <li>Make sure students are properly positioned in front of the camera</li>
+                                <li>The system will automatically recognize students' faces</li>
+                                <li>For additional verification, students can use fingerprint scanner</li>
+                                <li>Click "Mark Attendance" to save attendance for recognized students</li>
+                                <li>Students not recognized will be marked as absent</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Select Stream</label>
+                                    <select class="form-control" id="stream_select">
+                                        <option value="">Select Stream</option>
+                                        {% for stream in streams %}
+                                        <option value="{{ stream.id }}">{{ stream.stream_name }} ({{ stream.grade_id.grade_name }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Select Academic Year</label>
+                                    <select class="form-control" id="academic_year_select">
+                                        <option value="">Select Academic Year</option>
+                                        {% for year in academic_years %}
+                                        <option value="{{ year.id }}">{{ year.academic_start_year }} - {{ year.academic_end_year }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Add radio buttons for check-in/check-out -->
+                            <div class="form-group">
+                                <label>Attendance Type</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="attendance_type" id="check_in" value="check_in" checked>
+                                    <label class="form-check-label" for="check_in">
+                                        Check In
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="attendance_type" id="check_out" value="check_out">
+                                    <label class="form-check-label" for="check_out">
+                                        Check Out
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Add verification method selection -->
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group">
+                                    <label>Verification Method</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="face_recognition" name="verification_method" value="face" checked>
+                                        <label class="form-check-label" for="face_recognition">
+                                            Face Recognition
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="fingerprint_verification" name="verification_method" value="fingerprint">
+                                        <label class="form-check-label" for="fingerprint_verification">
+                                            Fingerprint Verification
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <button id="start_camera" class="btn btn-primary">Start Camera</button>
+                            <button id="stop_camera" class="btn btn-danger" disabled>Stop Camera</button>
+                            <button id="start_fingerprint" class="btn btn-info" disabled>Start Fingerprint Scanner</button>
+                            <button id="mark_attendance" class="btn btn-success" disabled>Mark Attendance</button>
+                            <button id="export_attendance" class="btn btn-secondary" disabled>Export Attendance</button>
+                        </div>
+                        
+                        <!-- Improved camera container -->
+                        <div class="row mt-4">
+                            <div class="col-md-8 mx-auto">
+                                <div class="card">
+                                    <div class="card-header bg-primary">
+                                        <h4 class="card-title text-white">Camera Feed</h4>
+                                    </div>
+                                    <div class="card-body text-center" id="camera_container">
+                                        <div class="alert alert-info" id="camera_status">Camera not started</div>
+                                        <div style="position: relative;">
+                                            <video id="video" width="640" height="480" autoplay style="display: none; border: 1px solid #ddd; max-width: 100%;"></video>
+                                            <canvas id="canvas" width="640" height="480" style="display: none; position: absolute; top: 0; left: 0;"></canvas>
+                                        </div>
+                                        
+                                        <!-- Add a container to show cropped faces -->
+                                        <div id="cropped_faces_container" class="mt-3" style="display: none;">
+                                            <h5>Detected Faces:</h5>
+                                            <div id="cropped_faces" class="d-flex flex-wrap justify-content-center">
+                                                <!-- Cropped faces will be displayed here -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add fingerprint scanner container -->
+                        <div class="row mt-4" id="fingerprint_container" style="display: none;">
+                            <div class="col-md-8 mx-auto">
+                                <div class="card">
+                                    <div class="card-header bg-info">
+                                        <h4 class="card-title">Fingerprint Verification</h4>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <div id="fingerprint_status" class="alert alert-info">
+                                            Please place your finger on the scanner
+                                        </div>
+                                        <div id="fingerprint_image" class="mt-3">
+                                            <!-- <img src="/static/dist/img/fingerprint-scan.gif" alt="Fingerprint Scanner" style="max-width: 200px;"> -->
+                                        </div>
+                                        <div class="mt-3">
+                                            <input type="text" id="student_id_input" class="form-control" placeholder="Enter Student ID for manual verification">
+                                            <button id="verify_fingerprint" class="btn btn-primary mt-2">Verify</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-8 mx-auto">
+                                <div class="card">
+                                    <div class="card-header bg-info">
+                                        <h4 class="card-title">Recognized Students</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul id="recognized_students_list" class="list-group">
+                                            <!-- Recognized students will be listed here -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add progress indicator -->
+                        <div class="row mt-4">
+                            <div class="col-md-8 mx-auto">
+                                <div class="card">
+                                    <div class="card-header bg-success">
+                                        <h4 class="card-title text-white">Attendance Progress</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="progress">
+                                            <div id="attendance_progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                        </div>
+                                        <div class="mt-2 text-center" id="attendance_stats">
+                                            Waiting for students...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add a hidden div to store all students in the stream -->
+                        <div id="all_students_container" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function() {
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let context = canvas.getContext('2d');
+        let stream = null;
+        let recognizedStudents = {};
+        let allStudents = [];
+        let detectionInterval = null;
+        let fingerprintActive = false;
+        let processingFaces = false; // Flag to prevent race conditions
+        
+        // Function to detect faces and draw rectangles
+        function detectAndDrawFaces(imageData) {
+            // Skip if already processing faces
+            if (processingFaces) {
+                return;
+            }
+            
+            processingFaces = true;
+            // Show status
+            $('#camera_status').html('<div class="alert alert-info">Detecting faces...</div>');
+            
+            let streamId = $('#stream_select').val();
+            let academicYearId = $('#academic_year_select').val();
+            
+            // First step: Send the frame to the server for face detection
+            $.ajax({
+                url: "{% url 'staff_detect_faces' %}",
+                type: "POST",
+                data: {
+                    'stream_id': streamId,
+                    'academic_year_id': academicYearId,
+                    'image_data': imageData,
+                    'detection_only': 'true', // Only detect faces, don't recognize yet
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+success: function(response) {
+    processingFaces = false;
+    if (response.status === 'success' && response.face_locations && response.face_locations.length > 0) {
+        $('#camera_status').html('<div class="alert alert-success">' + response.face_locations.length + ' face(s) detected!</div>');
+        
+        // Clear previous cropped faces
+        $('#cropped_faces').empty();
+        
+        // Draw rectangles on detected faces
+        drawFaceRectangles(response.face_locations);
+        
+        // Crop each face and send for recognition
+        cropAndRecognizeFaces(response.face_locations);
+    } else if (response.status === 'info') {
+        $('#camera_status').html('<div class="alert alert-info">No faces detected. Please ensure students are in frame.</div>');
+        // Clear any previous drawings when no faces are detected
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    } else if (response.status === 'error' && response.message === 'Multiple faces detected. Please show only one face for accurate recognition.') {
+        $('#camera_status').html('<div class="alert alert-danger">' + response.message + '</div>');
+        console.error('Face detection error:', response.message);
+    } else {
+        // Suppress the "Detected 1 student" message or other messages
+        $('#camera_status').html('');
+    }
+},
+                error: function(xhr, status, error) {
+                    processingFaces = false;
+                    $('#camera_status').html('<div class="alert alert-danger">Connection error during face detection</div>');
+                    console.error('Face detection request failed:', error);
+                }
+            });
+        }
+        
+        // Function to draw rectangles around detected faces
+        function drawFaceRectangles(faceLocations) {
+            // First clear the canvas
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the current video frame
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Now draw rectangles for each face
+            faceLocations.forEach(function(face, index) {
+                // Set styling for the rectangle
+                context.strokeStyle = '#ff0000'; // Red rectangle for unrecognized faces
+                context.lineWidth = 3;
+                
+                // Draw rectangle around face
+                context.strokeRect(
+                    face.left, 
+                    face.top, 
+                    face.width, 
+                    face.height
+                );
+                
+                // Add face number for reference
+                context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                context.fillRect(face.left, face.top - 20, 40, 20);
+                context.fillStyle = '#ffffff';
+                context.font = 'bold 16px Arial';
+                context.fillText('Face ' + (index + 1), face.left + 5, face.top - 5);
+            });
+            
+            // Make the canvas visible
+            canvas.style.display = 'block';
+        }
+        
+        // Function to crop faces and send for recognition
+        function cropAndRecognizeFaces(faceLocations) {
+            // Show the cropped faces container
+            $('#cropped_faces_container').show();
+            
+            // Create a temporary canvas for cropping
+            let tempCanvas = document.createElement('canvas');
+            let tempContext = tempCanvas.getContext('2d');
+            
+            // Process each face location
+            let recognitionPromises = faceLocations.map(function(face, index) {
+                // Set the temporary canvas size to the face dimensions
+                tempCanvas.width = face.width;
+                tempCanvas.height = face.height;
+                
+                // Draw only the face region to the temporary canvas
+                tempContext.drawImage(
+                    video, 
+                    face.left, face.top, face.width, face.height, // Source rectangle
+                    0, 0, face.width, face.height // Destination rectangle
+                );
+                
+                // Get the cropped face as data URL
+                let croppedFaceData = tempCanvas.toDataURL('image/jpeg');
+                
+                // Display the cropped face
+                $('#cropped_faces').append(`
+                    <div class="m-2 text-center">
+                        <img src="${croppedFaceData}" alt="Face ${index + 1}" style="max-width: 100px; border: 2px solid #ccc;">
+                        <div id="face_status_${index}" class="mt-1 small">Processing...</div>
+                    </div>
+                `);
+                
+                // Send the cropped face for recognition
+                return recognizeFace(croppedFaceData, index);
+            });
+            
+            // Process all recognition results
+            Promise.all(recognitionPromises)
+                .then(function(results) {
+                    // Update the face rectangles with names for recognized faces
+                    updateFaceRectanglesWithNames(results, faceLocations);
+
+                    // Extract recognized students from results
+                    let recognizedStudentsList = results
+                        .filter(r => r.recognized)
+                        .map(r => ({
+                            id: r.student.id,
+                            name: r.student.name,
+                            admission_number: r.student.admission_number || '',
+                            confidence: r.student.confidence || null
+                        }));
+
+                    // Deduplicate recognized students by id
+                    let uniqueRecognizedStudents = [];
+                    let seenIds = new Set();
+                    recognizedStudentsList.forEach(student => {
+                        if (!seenIds.has(student.id)) {
+                            seenIds.add(student.id);
+                            uniqueRecognizedStudents.push(student);
+                        }
+                    });
+
+                    // Update the recognized students UI and data
+                    updateRecognizedStudents(uniqueRecognizedStudents, 'face');
+                })
+                .catch(function(error) {
+                    console.error("Error processing recognition results:", error);
+                    $('#camera_status').html('<div class="alert alert-danger">Error processing recognition results</div>');
+                });
+        }
+
+function recognizeFace(croppedFaceData, faceIndex) {
+    return new Promise(function(resolve, reject) {
+        let streamId = $('#stream_select').val();
+        let academicYearId = $('#academic_year_select').val();
+
+        $.ajax({
+                url: "{% url 'staff_recognize_face' %}",
+            type: "POST",
+            data: {
+                'stream_id': streamId,
+                'academic_year_id': academicYearId,
+                'face_data': croppedFaceData,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.status === 'success' && response.recognized_student) {
+                    resolve({
+                        faceIndex: faceIndex,
+                        recognized: true,
+                        student: {
+                            id: response.recognized_student.id,
+                            name: response.recognized_student.name,
+                            confidence: response.recognized_student.confidence
+                        }
+                    });
+                } else {
+                    resolve({
+                        faceIndex: faceIndex,
+                        recognized: false,
+                        student: null
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Face recognition request failed:", error);
+                resolve({
+                    faceIndex: faceIndex,
+                    recognized: false,
+                    student: null
+                });
+            }
+        });
+    });
+}
+        
+        // Function to update face rectangles with names after recognition
+        function updateFaceRectanglesWithNames(recognitionResults, faceLocations) {
+            // First clear the canvas
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the current video frame
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            if (recognitionResults.length === 0) {
+                $('#camera_status').html('<div class="alert alert-warning">No faces recognized</div>');
+            } else {
+                $('#camera_status').html('');
+            }
+            
+            // Now draw rectangles and names for each face
+            recognitionResults.forEach(function(result, index) {
+                const face = faceLocations[result.faceIndex];
+                
+                // Set styling for the rectangle based on recognition status
+                if (result.recognized) {
+                    context.strokeStyle = '#00ff00'; // Green rectangle for recognized faces
+                } else {
+                    context.strokeStyle = '#ff0000'; // Red rectangle for unrecognized faces
+                }
+                
+                context.lineWidth = 3;
+                
+                // Draw rectangle around face
+                context.strokeRect(
+                    face.left, 
+                    face.top, 
+                    face.width, 
+                    face.height
+                );
+                
+                // Draw name or status
+                context.font = 'bold 16px Arial';
+                
+                // Create background for text
+                let text = result.recognized ? result.student.name : 'Unknown';
+                let textWidth = context.measureText(text).width;
+                
+                context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                context.fillRect(
+                    face.left, 
+                    face.top - 25, 
+                    textWidth + 10, 
+                    25
+                );
+                
+                // Draw the name/status
+                context.fillStyle = result.recognized ? '#00ff00' : '#ff0000';
+                context.fillText(
+                    text, 
+                    face.left + 5, 
+                    face.top - 7
+                );
+                
+                // Add confidence if recognized
+                if (result.recognized && result.student.confidence) {
+                    const confidenceText = `${Math.round(result.student.confidence * 100)}%`;
+                    const confidenceWidth = context.measureText(confidenceText).width;
+                    
+                    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    context.fillRect(
+                        face.left + face.width - confidenceWidth - 10, 
+                        face.top - 25, 
+                        confidenceWidth + 10, 
+                        25
+                    );
+                    
+                    context.fillStyle = '#00ff00';
+                    context.fillText(
+                        confidenceText,
+                        face.left + face.width - confidenceWidth - 5,
+                        face.top - 7
+                    );
+                }
+            });
+        }
+        
+        // Validation function
+        function validateSelections() {
+            let faceSelected = $('#face_recognition').is(':checked');
+            let fingerprintSelected = $('#fingerprint_verification').is(':checked');
+            
+            let errors = [];
+            
+            if (!faceSelected && !fingerprintSelected) {
+                errors.push("Please select at least one verification method");
+            }
+            
+            // Remove any enforced dependency that fingerprint verification must be done before face recognition
+            // So no error if only one method is selected
+            
+            if (errors.length > 0) {
+                alert(errors.join("\n"));
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Start fingerprint scanner button click handler
+        $('#start_fingerprint').click(function() {
+            console.log("Start fingerprint button clicked");
+            $('#fingerprint_container').show();
+            fingerprintActive = true;
+            $('#fingerprint_status').html('Fingerprint scanner activated. Please place finger on scanner.');
+        });
+
+        // Function to verify fingerprint with server
+        function verifyFingerprintWithServer(fingerprintData, streamId, academicYearId) {
+            // Update status
+            $('#fingerprint_status').html('<div class="alert alert-info">Verifying fingerprint...</div>');
+            
+            // Convert fingerprint data to appropriate format for sending to server
+            let formattedData = formatFingerprintData(fingerprintData);
+            
+            // Send to server for verification
+            $.ajax({
+                url: "{% url 'verify_fingerprint' %}",
+                type: "POST",
+                data: {
+                    'stream_id': streamId,
+                    'academic_year_id': academicYearId,
+                    'fingerprint_data': formattedData,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // Fingerprint verified successfully
+                        $('#fingerprint_status').html('<div class="alert alert-success">Fingerprint verified for ' + response.student.name + '</div>');
+                        
+                        // Add to recognized students list
+                        if (!recognizedStudents[response.student.id]) {
+                            recognizedStudents[response.student.id] = {
+                                name: response.student.name,
+                                timestamp: new Date().toLocaleTimeString(),
+                                method: 'fingerprint'
+                            };
+                            
+                            // Add to the UI
+                            $('#recognized_students_list').append(
+                                `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${response.student.name}</strong> 
+                                        <span class="badge badge-info">${response.student.admission_number || ''}</span>
+                                        <span class="badge badge-warning">Fingerprint</span>
+                                    </div>
+                                    <span class="badge badge-success">${new Date().toLocaleTimeString()}</span>
+                                </li>`
+                            );
+                            
+                            // Update attendance count
+                            updateAttendanceCount();
+                        }
+                        
+                        // Reset for next scan
+                        setTimeout(function() {
+                            $('#fingerprint_status').html('<div class="alert alert-info">Ready for next fingerprint scan.</div>');
+                        }, 3000);
+                    } else {
+                        // Verification failed
+                        $('#fingerprint_status').html('<div class="alert alert-danger">' + response.message + '</div>');
+                        
+                        // Reset for next scan
+                        setTimeout(function() {
+                            $('#fingerprint_status').html('<div class="alert alert-info">Please try again.</div>');
+                        }, 3000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#fingerprint_status').html('<div class="alert alert-danger">Server error during verification. Please try again.</div>');
+                    console.error("Fingerprint verification error:", error);
+                }
+            });
+        }
+
+        // Helper function to format fingerprint data for transmission
+        function formatFingerprintData(data) {
+            // Handle different data types properly
+            if (data === null || data === undefined) {
+                return '';
+            }
+            if (typeof data === 'object') {
+                try {
+                    return JSON.stringify(data);
+                } catch (e) {
+                    console.error("Error stringifying fingerprint data:", e);
+                    return '';
+                }
+            }
+            return String(data);
+        }
+
+        // When stream or academic year is selected, fetch all students in that stream
+        $('#stream_select, #academic_year_select').change(function() {
+            let streamId = $('#stream_select').val();
+            let academicYearId = $('#academic_year_select').val();
+            
+            if (streamId && academicYearId) {
+                // Fetch all students in this stream and academic year
+                $.ajax({
+                    url: "{% url 'get_students' %}",
+                    type: "POST",
+                    data: {
+                        'stream': streamId,
+                        'academic_year': academicYearId,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        allStudents = JSON.parse(response);
+                        console.log("Loaded " + allStudents.length + " students");
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error fetching students:", error);
+                    }
+                });
+            }
+        });
+        
+        // Toggle fingerprint verification option
+        $('#fingerprint_verification').change(function() {
+            if($(this).is(':checked')) {
+                $('#start_fingerprint').prop('disabled', false);
+            } else {
+                $('#start_fingerprint').prop('disabled', true);
+                $('#fingerprint_container').hide();
+                fingerprintActive = false;
+            }
+        });
+        
+        // Verify fingerprint manually (simulated)
+        $('#verify_fingerprint').click(function() {
+            let studentId = $('#student_id_input').val();
+            
+            if (!studentId) {
+                alert('Please enter a student ID');
+                return;
+            }
+            
+            // Find student in the list
+            let student = allStudents.find(s => s.id == studentId);
+            
+            if (student) {
+                // Simulate fingerprint verification
+                $('#fingerprint_status').html('<div class="alert alert-success">Fingerprint verified for ' + student.name + '</div>');
+                
+                // Add to recognized students
+                if (!recognizedStudents[student.id]) {
+                    recognizedStudents[student.id] = {
+                        name: student.name,
+                        timestamp: new Date().toLocaleTimeString(),
+                        method: 'fingerprint'
+                    };
+                    
+                    // Add to the UI
+                    $('#recognized_students_list').append(
+                        `<li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${student.name}</strong> 
+                                <span class="badge badge-info">${student.roll_number || ''}</span>
+                                <span class="badge badge-warning">Fingerprint</span>
+                            </div>
+                            <span class="badge badge-success">${new Date().toLocaleTimeString()}</span>
+                        </li>`
+                    );
+                    
+                    // Update the count and button text
+                    updateAttendanceCount();
+                }
+                
+                // Clear the input
+                $('#student_id_input').val('');
+            } else {
+                $('#fingerprint_status').html('<div class="alert alert-danger">Student not found. Please check the ID.</div>');
+            }
+        });
+        
+        // Start camera button click
+        $('#start_camera').click(function() {
+            console.log("Start camera button clicked");
+            if (!validateSelections()) {
+                console.log("Validation failed");
+                return;
+            }
+            
+            // Show loading indicator
+            $('#camera_status').html('<div class="alert alert-info">Accessing camera...</div>');
+            
+            // Start the camera with better error handling
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(s) {
+                    console.log("Camera access granted");
+                    stream = s;
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    $('#start_camera').prop('disabled', true);
+                    $('#stop_camera').prop('disabled', false);
+                    $('#mark_attendance').prop('disabled', false);
+                    
+                    // Start face detection
+                    startFaceDetection();
+                })
+                .catch(function(err) {
+                    console.error("Camera access error:", err);
+                    let errorMessage = '';
+                    
+                    if (err.name === 'NotAllowedError') {
+                        errorMessage = 'Camera access denied. Please allow camera access in your browser settings.';
+                    } else if (err.name === 'NotFoundError') {
+                        errorMessage = 'No camera found. Please connect a camera and try again.';
+                    } else if (err.name === 'NotReadableError') {
+                        errorMessage = 'Camera is in use by another application. Please close other applications using the camera.';
+                    } else {
+                        errorMessage = 'Error accessing camera: ' + err.message;
+                    }
+                    
+                    $('#camera_status').html('<div class="alert alert-danger">' + errorMessage + '</div>');
+                });
+        });
+        
+        // Stop camera button click
+        $('#stop_camera').click(function() {
+            stopCamera();
+        });
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                                        track = null; // Help garbage collection
+                });
+                stream = null;
+                video.srcObject = null;
+                video.style.display = 'none';
+                canvas.style.display = 'none'; // Hide the canvas too
+                $('#cropped_faces_container').hide(); // Hide cropped faces
+                $('#start_camera').prop('disabled', false);
+                $('#stop_camera').prop('disabled', true);
+                
+                // Only disable mark attendance if fingerprint is not active
+                if (!fingerprintActive) {
+                    $('#mark_attendance').prop('disabled', true);
+                }
+                
+                // Clear detection interval
+                if (detectionInterval) {
+                    clearInterval(detectionInterval);
+                    detectionInterval = null;
+                }
+                
+                // Update camera status
+                $('#camera_status').html('<div class="alert alert-info">Camera stopped</div>');
+            }
+        }
+        
+        // Export attendance button click
+        $('#export_attendance').click(function() {
+            if (Object.keys(recognizedStudents).length === 0) {
+                alert('No attendance data to export');
+                return;
+            }
+            
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Student Name,Student ID,Status,Verification Method,Timestamp\n";
+            
+            allStudents.forEach(function(student) {
+                let status = recognizedStudents[student.id] ? "Present" : "Absent";
+                let method = recognizedStudents[student.id] ? recognizedStudents[student.id].method : "N/A";
+                let timestamp = recognizedStudents[student.id] ? recognizedStudents[student.id].timestamp : "N/A";
+                
+                csvContent += `${student.name},${student.id},${status},${method},${timestamp}\n`;
+            });
+            
+            // Create download link
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "attendance_report_" + new Date().toISOString().slice(0,10) + ".csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // Mark attendance button click
+            $('#mark_attendance').click(function() {
+                if (allStudents.length === 0) {
+                    alert('No students found in this stream and academic year. Please check your selection.');
+                    return;
+                }
+                
+                let streamId = $('#stream_select').val();
+                let academicYearId = $('#academic_year_select').val();
+
+                if (!streamId) {
+                    alert('Please select a stream before marking attendance.');
+                    return;
+                }
+                if (!academicYearId) {
+                    alert('Please select an academic year before marking attendance.');
+                    return;
+                }
+
+                let imageBase64 = canvas.toDataURL('image/jpeg');
+                
+                function getCookie(name) {
+                    let cookieValue = null;
+                    if (document.cookie && document.cookie !== '') {
+                        const cookies = document.cookie.split(';');
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                            }
+                        }
+                    }
+                    return cookieValue;
+                }
+
+                const csrftoken = getCookie('csrftoken');
+
+                // Prepare recognized student IDs array
+                let recognizedStudentIds = Object.keys(recognizedStudents).map(id => parseInt(id));
+                let attendanceType = $('input[name="attendance_type"]:checked').val();
+
+                fetch('{% url "staff_save_attendance_with_face" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: $.param({
+                        stream_id: streamId,
+                        academic_year_id: academicYearId,
+                        recognized_students: JSON.stringify(recognizedStudentIds),
+                        attendance_type: attendanceType
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        let presentCount = Object.keys(recognizedStudents).length;
+                        let absentCount = allStudents.length - presentCount;
+                        
+                        alert(`Attendance marked successfully!\n\nPresent: ${presentCount} students\nAbsent: ${absentCount} students\nTotal: ${allStudents.length} students`);
+                        
+                        stopCamera();
+                        // Hide fingerprint container
+                        $('#fingerprint_container').hide();
+                        fingerprintActive = false;
+                        // Clear the recognized students list
+                        recognizedStudents = {};
+                        $('#recognized_students_list').empty();
+                        $('#mark_attendance').text('Mark Attendance');
+                        
+                        // Enable export button
+                        $('#export_attendance').prop('disabled', false);
+                    } else if (data.status === 'warning') {
+                        alert(data.message);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred while marking attendance: ' + error.message);
+                    console.error(error);
+                });
+            });
+        
+        function startFaceDetection() {
+            // Clear any existing interval
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
+            }
+            
+            // Update camera status
+            $('#camera_status').html('<div class="alert alert-success">Camera active - scanning for faces...</div>');
+            
+            // Make canvas visible and position it over the video
+            canvas.style.display = 'block';
+            
+            // Set up the detection interval
+            detectionInterval = setInterval(function() {
+                if (stream && video.style.display === 'block' && !processingFaces) {
+                    // Take a snapshot and send to server for processing
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    let imageData = canvas.toDataURL('image/jpeg');
+                    
+                    // Detect faces, crop them, and recognize
+                    detectAndDrawFaces(imageData);
+                }
+            }, 3000); // Check every 3 seconds
+        }
+        
+        function updateRecognizedStudents(students, method) {
+            // Update our local record of recognized students
+            students.forEach(function(student) {
+                if (!recognizedStudents[student.id]) {
+                    recognizedStudents[student.id] = {
+                        name: student.name,
+                        timestamp: new Date().toLocaleTimeString(),
+                        method: method,
+                        confidence: student.confidence || null // Add confidence if available
+                    };
+                    
+                    // Add to the UI
+                    $('#recognized_students_list').append(
+                        `<li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${student.name}</strong> 
+                                <span class="badge badge-info">${student.admission_number || ''}</span>
+                                <span class="badge badge-${method === 'face' ? 'primary' : 'warning'}">${method === 'face' ? 'Face' : 'Fingerprint'}</span>
+                                ${student.confidence ? `<span class="badge badge-secondary">Confidence: ${Math.round(student.confidence * 100)}%</span>` : ''}
+                            </div>
+                            <span class="badge badge-success">${new Date().toLocaleTimeString()}</span>
+                        </li>`
+                    );
+                    
+                    // Update the count and button text
+                    updateAttendanceCount();
+
+                    // Automatically mark attendance for this student
+                    autoMarkAttendance(student.id, method);
+                }
+            });
+        }
+
+        // Function to automatically mark attendance for a single student
+        function autoMarkAttendance(studentId, method) {
+            let streamId = $('#stream_select').val();
+            let academicYearId = $('#academic_year_select').val();
+            let attendanceType = $('input[name="attendance_type"]:checked').val();
+
+            if (!streamId || !academicYearId || !attendanceType) {
+                console.warn("Stream, academic year, or attendance type not selected. Cannot auto mark attendance.");
+                return;
+            }
+
+            $.ajax({
+                url: "{% url 'staff_take_attendance_with_face' %}",
+                type: "POST",
+                data: {
+                    'attendance_type': attendanceType,
+                    'stream_id': streamId,
+                    'academic_year_id': academicYearId,
+                    'student_id': studentId,
+                    'verification_method': method,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        console.log(`Attendance marked for student ID ${studentId}`);
+                    } else {
+                        console.warn(`Failed to mark attendance for student ID ${studentId}: ${response.message}`);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(`Error marking attendance for student ID ${studentId}:`, error);
+                }
+            });
+        }
+        
+        function updateAttendanceCount() {
+            // Update the count and button text
+            let recognizedCount = Object.keys(recognizedStudents).length;
+            let totalCount = allStudents.length;
+            let absentCount = totalCount - recognizedCount;
+            
+            if (totalCount > 0) {
+                let percentage = Math.round((recognizedCount / totalCount) * 100);
+                $('#attendance_progress').css('width', percentage + '%');
+                $('#attendance_progress').attr('aria-valuenow', percentage);
+                $('#attendance_progress').text(percentage + '%');
+                
+                $('#attendance_stats').html(`
+                    <strong>Present:</strong> ${recognizedCount} students | 
+                    <strong>Absent:</strong> ${absentCount} students | 
+                    <strong>Total:</strong> ${totalCount} students
+                `);
+                
+                $('#mark_attendance').text(`Mark Attendance (${recognizedCount} present, ${absentCount} absent)`);
+            } else {
+                $('#attendance_stats').html('No students loaded for this stream and academic year');
+            }
+        }
+        
+        // Clean up when leaving the page
+        $(window).on('beforeunload', function() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+            }
+        });
+        
+        // Add keyboard shortcuts for common actions
+        $(document).keydown(function(e) {
+            // Alt + S to start camera
+            if (e.altKey && e.keyCode === 83) {
+                if (!$('#start_camera').prop('disabled')) {
+                    $('#start_camera').click();
+                }
+                e.preventDefault();
+            }
+            
+            // Alt + X to stop camera
+            if (e.altKey && e.keyCode === 88) {
+                if (!$('#stop_camera').prop('disabled')) {
+                    $('#stop_camera').click();
+                }
+                e.preventDefault();
+            }
+            
+            // Alt + M to mark attendance
+            if (e.altKey && e.keyCode === 77) {
+                if (!$('#mark_attendance').prop('disabled')) {
+                    $('#mark_attendance').click();
+                }
+                e.preventDefault();
+            }
+            
+            // Alt + F to start fingerprint
+            if (e.altKey && e.keyCode === 70) {
+                if (!$('#start_fingerprint').prop('disabled')) {
+                    $('#start_fingerprint').click();
+                }
+                e.preventDefault();
+            }
+            
+            // Alt + E to export attendance
+            if (e.altKey && e.keyCode === 69) {
+                if (!$('#export_attendance').prop('disabled')) {
+                    $('#export_attendance').click();
+                }
+                e.preventDefault();
+            }
+        });
+        
+        // Add tooltip to show keyboard shortcuts
+        $('[data-toggle="tooltip"]').tooltip();
+        
+        // Add tooltips to buttons
+        $('#start_camera').attr('title', 'Start Camera (Alt+S)').attr('data-toggle', 'tooltip');
+        $('#stop_camera').attr('title', 'Stop Camera (Alt+X)').attr('data-toggle', 'tooltip');
+        $('#mark_attendance').attr('title', 'Mark Attendance (Alt+M)').attr('data-toggle', 'tooltip');
+        $('#start_fingerprint').attr('title', 'Start Fingerprint Scanner (Alt+F)').attr('data-toggle', 'tooltip');
+        $('#export_attendance').attr('title', 'Export Attendance (Alt+E)').attr('data-toggle', 'tooltip');
+    });
+</script>
+{% endblock custom_js %}

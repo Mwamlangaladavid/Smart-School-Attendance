@@ -1,0 +1,44 @@
+{% extends 'hod_template/base_template.html' %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Stream List</h3>
+                    </div>
+                    <div class="card-body">
+                        <table id="example2" class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Stream Name</th>
+                                    <th>Grade</th>
+                                    <th>Staff</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stream in streams %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ stream.stream_name }}</td>
+                                    <td>{{ stream.grade_id.grade_name }}</td>
+                                    <td>{{ stream.staff_id.first_name }} {{ stream.staff_id.last_name }}</td>
+                                    <td>
+                                        <a href="{% url 'edit_stream' stream.id %}" class="btn btn-info btn-sm">Edit</a>
+                                        <a href="{% url 'delete_stream' stream.id %}" class="btn btn-danger btn-sm">Delete</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}

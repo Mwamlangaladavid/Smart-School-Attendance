@@ -1,0 +1,41 @@
+{% extends 'parent_template/base_template.html' %}
+
+{% block page_title %}
+Student Results
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="content">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Results for {{ student.first_name }} {{ student.last_name }}</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Stream</th>
+                                <th>Exam Marks</th>
+                                <th>Assignment Marks</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in studentresult %}
+                            <tr>
+                                <td>{{ result.stream_id.stream_name }}</td>
+                                <td>{{ result.stream_exam_marks }}</td>
+                                <td>{{ result.stream_assignment_marks }}</td>
+                                <td>{{ result.stream_exam_marks|add:result.stream_assignment_marks }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}

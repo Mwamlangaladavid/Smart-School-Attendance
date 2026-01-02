@@ -1,0 +1,280 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+Edit Attendance
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-edit"></i> Edit Attendance Record
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="info-box bg-info">
+                                    <span class="info-box-icon"><i class="fas fa-calendar-day"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Date</span>
+                                        <span class="info-box-number">{{ attendance.attendance_date|date:"F d, Y" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-box bg-success">
+                                    <span class="info-box-icon"><i class="fas fa-users"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Stream</span>
+                                        <span class="info-box-number">{{ attendance.stream_id.stream_name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-box bg-warning">
+                                    <span class="info-box-icon"><i class="fas fa-calendar-alt"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Academic Year</span>
+                                        <span class="info-box-number">{{ attendance.academic_year_id.academic_start_year }} - {{ attendance.academic_year_id.academic_end_year }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attendance Summary -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card card-primary card-outline">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Attendance Summary</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4 text-center">
+                                                <div class="info-box bg-success">
+                                                    <span class="info-box-icon"><i class="fas fa-user-check"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Present</span>
+                                                        <span class="info-box-number">{{ present_count }}</span>
+                                                        <div class="progress">
+                                                            <div class="progress-bar" style="width: '{{ present_percentage|floatformat:0 }}%'"></div>
+                                                        </div>
+                                                        <span class="progress-description">
+                                                            {{ present_percentage|floatformat:1 }}% of total students
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <div class="info-box bg-danger">
+                                                    <span class="info-box-icon"><i class="fas fa-user-times"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Absent</span>
+                                                        <span class="info-box-number">{{ absent_count }}</span>
+                                                        <div class="progress">
+                                                            <div class="progress-bar" style="width: '{{ absent_percentage|floatformat:0 }}%'"></div>
+                                                        </div>
+                                                        <span class="progress-description">
+                                                            {{ absent_percentage|floatformat:1 }}% of total students
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <div class="info-box bg-primary">
+                                                    <span class="info-box-icon"><i class="fas fa-users"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Total Students</span>
+                                                        <span class="info-box-number">{{ total_count }}</span>
+                                                        <div class="progress">
+                                                            <div class="progress-bar" style="width: 100%"></div>
+                                                        </div>
+                                                        <span class="progress-description">
+                                                            Total enrolled students
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="post" action="{% url 'save_updated_attendance' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="attendance_id" value="{{ attendance.id }}">
+                            
+                            <!-- Bulk Actions -->
+                            <div class="mb-3">
+                                <button type="button" id="mark_all_present" class="btn btn-success mr-2">
+                                    <i class="fas fa-check-circle"></i> Mark All Present
+                                </button>
+                                <button type="button" id="mark_all_absent" class="btn btn-danger mr-2">
+                                    <i class="fas fa-times-circle"></i> Mark All Absent
+                                </button>
+                                <button type="button" id="invert_selection" class="btn btn-info">
+                                    <i class="fas fa-exchange-alt"></i> Invert Selection
+                                </button>
+                            </div>
+                            
+                            <!-- Search Box -->
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" id="student_search" class="form-control" placeholder="Search students...">
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped" id="attendance_table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px">#</th>
+                                            <th>Student Name</th>
+                                            <th>Admission Number</th>
+                                            <th style="width: 150px">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for report in attendance_reports %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ report.student_id.first_name }} {{ report.student_id.last_name }}</td>
+                                            <td>{{ report.student_id.admission_number|default:"N/A" }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                                    <label class="btn btn-outline-success {% if report.status %}active{% endif %}">
+                                                        <input type="radio" name="student_{{ report.id }}" value="present" {% if report.status %}checked{% endif %}> Present
+                                                    </label>
+                                                    <label class="btn btn-outline-danger {% if not report.status %}active{% endif %}">
+                                                        <input type="radio" name="student_{{ report.id }}" value="absent" {% if not report.status %}checked{% endif %}> Absent
+                                                    </label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="form-group mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Changes
+                                </button>
+                                <a href="{% url 'admin_view_attendance' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to Attendance
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function() {
+        // Add confirmation before form submission
+        $('form').submit(function(e) {
+            var confirmed = confirm('Are you sure you want to update this attendance record?');
+            if (!confirmed) {
+                e.preventDefault();
+            }
+        });
+        
+        // Mark all students present
+        $('#mark_all_present').click(function() {
+            $('input[value="present"]').prop('checked', true).parent().addClass('active');
+            $('input[value="absent"]').prop('checked', false).parent().removeClass('active');
+        });
+        
+        // Mark all students absent
+        $('#mark_all_absent').click(function() {
+            $('input[value="absent"]').prop('checked', true).parent().addClass('active');
+            $('input[value="present"]').prop('checked', false).parent().removeClass('active');
+        });
+        
+        // Invert current selection
+        $('#invert_selection').click(function() {
+            $('input[type="radio"]').each(function() {
+                var isChecked = $(this).prop('checked');
+                
+                if (isChecked) {
+                    // If this radio is checked, check the sibling radio instead
+                    $(this).prop('checked', false).parent().removeClass('active');
+                    $(this).parent().siblings('label').find('input').prop('checked', true).parent().addClass('active');
+                }
+            });
+        });
+        
+        // Student search functionality
+        $('#student_search').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $('#attendance_table tbody tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+        
+        // Highlight changes
+        $('input[type="radio"]').change(function() {
+            $(this).closest('tr').addClass('bg-warning');
+        });
+        
+        // Show summary of changes
+        var changesCount = 0;
+        $('input[type="radio"]').change(function() {
+            changesCount++;
+            updateChangesCounter();
+        });
+        
+        function updateChangesCounter() {
+            // Remove existing counter if any
+            $('.changes-counter').remove();
+            
+            if (changesCount > 0) {
+                // Add a floating counter showing number of changes
+                $('body').append('<div class="changes-counter">' + changesCount + ' changes</div>');
+                
+                // Style the counter
+                $('.changes-counter').css({
+                    'position': 'fixed',
+                    'bottom': '20px',
+                    'right': '20px',
+                    'background-color': '#dc3545',
+                    'color': 'white',
+                    'padding': '5px 15px',
+                    'border-radius': '20px',
+                    'font-weight': 'bold',
+                    'z-index': '1000'
+                });
+            }
+        }
+    });
+</script>
+
+<style>
+    /* Style for the changes counter */
+    .changes-counter {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Highlight changed rows */
+    .bg-warning {
+        transition: background-color 0.5s ease;
+    }
+    
+    /* Improve button group appearance */
+    .btn-group-toggle .btn {
+        min-width: 80px;
+    }
+</style>
+{% endblock custom_js %}

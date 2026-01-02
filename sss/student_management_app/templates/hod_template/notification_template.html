@@ -1,0 +1,97 @@
+{% load static %}
+
+<!-- Messages Dropdown Menu -->
+<li class="nav-item dropdown">
+  <a class="nav-link" data-toggle="dropdown" href="#">
+    <i class="far fa-comments"></i>
+    {% if unread_feedback_count > 0 %}
+    <span class="badge badge-danger navbar-badge">{{ unread_feedback_count }}</span>
+    {% endif %}
+  </a>
+  <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+    {% if recent_feedback_messages %}
+      {% for feedback in recent_feedback_messages %}
+        <a href="{% if feedback.type == 'parent' %}{% url 'parent_feedback_message' %}{% else %}{% url 'staff_feedback_message' %}{% endif %}" class="dropdown-item">
+          <!-- Message Start -->
+          <div class="media">
+            {% if feedback.profile_pic %}
+              <img src="{{ feedback.profile_pic.url }}" alt="User Avatar" class="img-size-50 mr-3 img-circle">
+            {% else %}
+              <img src="{% static 'dist/img/avatar.png' %}" alt="User Avatar" class="img-size-50 mr-3 img-circle">
+            {% endif %}
+            <div class="media-body">
+              <h3 class="dropdown-item-title">
+                {{ feedback.sender }}
+                <span class="float-right text-sm {% if not feedback.replied %}text-danger{% else %}text-muted{% endif %}">
+                  <i class="fas {% if not feedback.replied %}fa-star{% else %}fa-check{% endif %}"></i>
+                </span>
+              </h3>
+              <p class="text-sm">{{ feedback.message|truncatechars:30 }}</p>
+              <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> {{ feedback.date|timesince }} ago</p>
+            </div>
+          </div>
+          <!-- Message End -->
+        </a>
+        <div class="dropdown-divider"></div>
+      {% endfor %}
+    {% else %}
+      <a href="#" class="dropdown-item">
+        <div class="media">
+          <div class="media-body text-center">
+            <p class="text-sm">No feedback messages</p>
+          </div>
+        </div>
+      </a>
+      <div class="dropdown-divider"></div>
+    {% endif %}
+    <a href="{% url 'parent_feedback_message' %}" class="dropdown-item dropdown-footer">See All Parent Messages</a>
+    <a href="{% url 'staff_feedback_message' %}" class="dropdown-item dropdown-footer">See All Staff Messages</a>
+  </div>
+</li>
+<!-- Notifications Dropdown Menu -->
+<li class="nav-item dropdown">
+  <a class="nav-link" data-toggle="dropdown" href="#">
+    <i class="far fa-bell"></i>
+    {% if pending_leave_count > 0 or recent_attendance_changes %}
+    <span class="badge badge-warning navbar-badge">{{ pending_leave_count|default:0|add:recent_attendance_changes|default:''|length }}</span>
+    {% endif %}
+  </a>
+  <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+    <span class="dropdown-item dropdown-header">
+      {% with total_notifications=system_notifications|default:''|length %}
+        {{ total_notifications }} Notification{{ total_notifications|pluralize }}
+      {% endwith %}
+    </span>
+    
+    {% if system_notifications %}
+      {% for notification in system_notifications %}
+        <div class="dropdown-divider"></div>
+        <a href="{% url notification.url %}" class="dropdown-item">
+          {% if notification.type == 'Student Leave' or notification.type == 'Staff Leave' %}
+            <i class="fas fa-user-clock mr-2"></i>
+          {% elif notification.type == 'Attendance Change' %}
+            <i class="fas fa-clipboard-check mr-2"></i>
+          {% else %}
+            <i class="fas fa-bell mr-2"></i>
+          {% endif %}
+          {{ notification.message }}
+          <span class="float-right text-muted text-sm">{{ notification.date|timesince }}</span>
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="dropdown-divider"></div>
+      <a href="#" class="dropdown-item">
+        <i class="fas fa-check mr-2"></i> No new notifications
+      </a>
+    {% endif %}
+    
+    <div class="dropdown-divider"></div>
+    <a href="{% url 'student_leave_view' %}" class="dropdown-item dropdown-footer">See All Student Leaves</a>
+    <a href="{% url 'staff_leave_view' %}" class="dropdown-item dropdown-footer">See All Staff Leaves</a>
+  </div>
+</li>
+<li class="nav-item">
+  <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
+    <i class="fas fa-th-large"></i>
+  </a>
+</li>

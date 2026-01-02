@@ -1,0 +1,143 @@
+{% extends 'staff_template/base_template.html' %}
+{% block page_title %}
+View Attendance Data
+{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+  .date-column {
+    border-left: 2px solid #dee2e6;
+    border-right: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+  }
+  
+  .check-column {
+    text-align: center;
+    min-width: 100px;
+  }
+  
+  .table th, .table td {
+    vertical-align: middle;
+  }
+  
+  .attendance-time {
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 3px;
+  }
+</style>
+{% endblock custom_css %}
+
+{% block main_content %}
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+              <div class="card-header">
+                <h3 class="card-title">View Attendance</h3>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body">
+                <form method="post" action="{% url 'staff_view_attendance' %}">
+                  {% csrf_token %}
+                  <div class="form-group">
+                    <label>Stream </label>
+                    <select class="form-control" name="stream" id="stream">
+                      {% for stream in streams %}
+                        <option value="{{ stream.id }}" {% if selected_stream and selected_stream.id == stream.id %}selected{% endif %}>{{ stream.stream_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Academic Year </label>
+                    <select class="form-control" name="academic_year" id="academic_year">
+                      {% for academic_year in academic_years %}
+                        <option value="{{ academic_year.id }}" {% if selected_academic_year and selected_academic_year.id == academic_year.id %}selected{% endif %}>{{ academic_year.academic_start_year }} TO {{ academic_year.academic_end_year }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                <div class="form-group d-flex justify-content-start align-items-center">
+                    <button type="submit" class="btn btn-primary">View Attendance</button>
+                </div>
+                </form>
+              </div>
+              <!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+
+            {% if attendance_dates and student_attendance %}
+            <div class="card card-info">
+              <div class="card-header">
+                <h3 class="card-title">Attendance Records</h3>
+              </div>
+              <div class="card-body table-responsive p-0" style="max-height: 500px;">
+                <table class="table table-bordered table-hover text-nowrap">
+                  <thead>
+                    <tr>
+                      <th>Admission No</th>
+                      <th>Student Name</th>
+                      {% for date in attendance_dates %}
+                        <th class="date-column" colspan="3">{{ date }}</th>
+                      {% endfor %}
+                    </tr>
+                    <tr>
+                      <th></th>
+                      <th></th>
+                      {% for date in attendance_dates %}
+                        <th class="check-column">Status</th>
+                        <th class="check-column">Check In</th>
+                        <th class="check-column">Check Out</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for student in student_attendance %}
+                    <tr>
+                      <td>{{ student.admission_number }}</td>
+                      <td>{{ student.name }}</td>
+                      {% for attendance in student.attendance %}
+                        <td class="check-column">
+                          {% if attendance.status == '1' %}
+                            <span class="badge badge-success">Present</span>
+                          {% elif attendance.status == '0' %}
+                            <span class="badge badge-danger">Absent</span>
+                          {% elif attendance.status == 'L' %}
+                            <span class="badge badge-warning">Leave</span>
+                          {% else %}
+                            <span class="badge badge-secondary">N/A</span>
+                          {% endif %}
+                        </td>
+                        <td class="check-column">
+                          {% if attendance.check_in %}
+                            <span class="attendance-time">{{ attendance.check_in|time:"H:i" }}</span>
+                          {% else %}
+                            -
+                          {% endif %}
+                        </td>
+                        <td class="check-column">
+                          {% if attendance.check_out %}
+                            <span class="attendance-time">{{ attendance.check_out|time:"H:i" }}</span>
+                          {% else %}
+                            -
+                          {% endif %}
+                        </td>
+                      {% endfor %}
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <div class="d-flex justify-content-end mt-3">
+                  <a href="{% url 'export_attendance_csv' %}?stream_id={{ selected_stream.id }}&academic_year_id={{ selected_academic_year.id }}" class="btn btn-success" target="_blank">Download Attendance CSV</a>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- /.content -->
+{% endblock main_content %}

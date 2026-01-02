@@ -1,0 +1,91 @@
+n{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+Attendance Details - {{ student.first_name }} {{ student.last_name }}
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            Attendance Details for {{ student.first_name }} {{ student.last_name }}
+                            <small class="text-muted">({{ student.admission_number }})</small>
+                        </h3>
+                        <div class="card-tools">
+                            <a href="{% url 'manage_student' %}" class="btn btn-sm btn-default">
+                                <i class="fas fa-arrow-left"></i> Back to Students
+                            </a>
+                            <button onclick="window.print()" class="btn btn-sm btn-primary">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center mb-4">
+                                    {% if student.profile_pic %}
+                                    <img src="{{ student.profile_pic.url }}" alt="Profile Pic" class="img-fluid rounded mb-3" style="max-height: 150px;">
+                                    {% else %}
+                                    <img src="/static/dist/img/user2-160x160.jpg" alt="Default Profile" class="img-fluid rounded mb-3" style="max-height: 150px;">
+                                    {% endif %}
+                                    <h5>{{ student.first_name }} {{ student.last_name }}</h5>
+                                    <p class="text-muted">{{ student.grade_id.grade_name }} - {{ student.stream_id.stream_name }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="info-box bg-info">
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Total Days</span>
+                                                <span class="info-box-number">{{ total_days }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-box bg-success">
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Present</span>
+                                                <span class="info-box-number">{{ present_days }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-box bg-danger">
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Absent</span>
+                                                <span class="info-box-number">{{ absent_days }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-box bg-warning">
+                                            <div class="info-box-content">
+                                                <span class="info-box-text">Attendance %</span>
+                                                <span class="info-box-number">{{ attendance_percentage }}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="chart-container" style="height: 250px;">
+                                    <canvas id="attendanceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% comment %} Removed attendance history table as per user request {% endcomment %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}
+
+{% comment %} Removed JavaScript related to attendance table and chart as attendance display is removed {% endcomment %}
+{% endblock custom_js %}

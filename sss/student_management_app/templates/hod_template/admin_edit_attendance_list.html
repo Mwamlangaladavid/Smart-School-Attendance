@@ -1,0 +1,78 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+Edit Attendance List
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <h3>Select Attendance Record to Edit</h3>
+        <form method="post" action="{% url 'admin_edit_attendance_list' %}">
+            {% csrf_token %}
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="grade">Grade</label>
+                    <select name="grade" id="grade" class="form-control" required>
+                        <option value="">Select Grade</option>
+                        {% for grade in grades %}
+                        <option value="{{ grade.id }}" {% if selected_grade and selected_grade.id == grade.id %}selected{% endif %}>{{ grade.grade_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="stream">Stream</label>
+                    <select name="stream" id="stream" class="form-control">
+                        <option value="">Select Stream (optional)</option>
+                        {% if streams %}
+                            {% for stream in streams %}
+                            <option value="{{ stream.id }}" {% if selected_stream and selected_stream.id == stream.id %}selected{% endif %}>{{ stream.stream_name }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="academic_year">Academic Year</label>
+                    <select name="academic_year" id="academic_year" class="form-control" required>
+                        <option value="">Select Academic Year</option>
+                        {% for year in academic_years %}
+                        <option value="{{ year.id }}" {% if selected_academic_year and selected_academic_year.id == year.id %}selected{% endif %}>{{ year.academic_start_year }} - {{ year.academic_end_year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mb-3">Filter</button>
+        </form>
+
+        {% if attendance_records %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Stream</th>
+                        <th>Academic Year</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attendance in attendance_records %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ attendance.attendance_date|date:"F d, Y" }}</td>
+                        <td>{{ attendance.stream_id.stream_name }}</td>
+                        <td>{{ attendance.academic_year_id.academic_start_year }} - {{ attendance.academic_year_id.academic_end_year }}</td>
+                        <td>
+                            <a href="{% url 'admin_edit_attendance' attendance.id %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock main_content %}

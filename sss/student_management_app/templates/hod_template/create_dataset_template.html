@@ -1,0 +1,128 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}
+Capture Face Data - {{ student.first_name }} {{ student.last_name }}
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Capture Face Data</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <p>Capturing face data for: <strong>{{ student.first_name }} {{ student.last_name }}</strong></p>
+                            <p>Please ensure good lighting and a clear view of the face.</p>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="camera_container" class="text-center">
+                                    <video id="video" width="400" height="300" autoplay></video>
+                                    <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <button id="capture" class="btn btn-primary">Capture Image</button>
+                                    <button id="save" class="btn btn-success" disabled>Save Images</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-info">
+                                        <h4 class="card-title">Captured Images</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="captured_images" class="row">
+                                            <!-- Captured images will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function() {
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let context = canvas.getContext('2d');
+        let capturedImages = [];
+        
+        // Start the camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                console.log("An error occurred: " + err);
+                alert("Error accessing camera. Please make sure your camera is connected and permissions are granted.");
+            });
+        
+        // Capture button click
+        $('#capture').click(function() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            let imageData = canvas.toDataURL('image/jpeg');
+            
+            capturedImages.push(imageData);
+            
+            // Add the captured image to the display
+            $('#captured_images').append(`
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <img src="${imageData}" class="card-img-top" alt="Captured Image">
+                        <div class="card-body p-2 text-center">
+                            <small class="text-muted">Image ${capturedImages.length}</small>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // Enable save button after capturing at least one image
+            if (capturedImages.length > 0) {
+                $('#save').prop('disabled', false);
+            }
+        });
+        
+        // Save button click
+        $('#save').click(function() {
+            if (capturedImages.length === 0) {
+                alert('Please capture at least one image first');
+                return;
+            }
+            
+            // Send the images to the server
+            $.ajax({
+                url: "{% url 'save_face_dataset' %}",
+                type: "POST",
+                data: {
+                    'student_id': "{{ student.id }}",
+                    'images': JSON.stringify(capturedImages),
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alert('Face data saved successfully');
+                        window.location.href = "{% url 'manage_student' %}";
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('An error occurred while saving the images');
+                    console.error(error);
+                }
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

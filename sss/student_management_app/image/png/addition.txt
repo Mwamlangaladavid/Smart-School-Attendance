@@ -1,0 +1,55 @@
+  video=document.getElementById("video");
+  startbutton=document.getElementById("startbutton");
+  photo=document.getElementById("photo");
+  canvas = document.getElementById('canvas');
+
+  //access webcam
+  navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+      })
+      .then(function(stream) {
+          video.srcObject = stream;
+          video.play();
+      })
+      .catch(function(err) {
+          console.log("An error occurred: " + err);
+      });      
+     
+
+      startbutton.addEventListener('click', function(ev) {
+      takepicture();
+      ev.preventDefault();
+      }, false);
+    
+  
+
+  function takepicture() {
+       alert("Say CheeeeeeZ");
+       var context = canvas.getContext('2d');
+       context.drawImage(video, 0, 0, 640, 480);
+       var data = canvas.toDataURL('image/png');
+       console.log(data);
+       var inp = canvas.toDataURL("image/png").split(';base64,')[1];
+       document.getElementById("input_face").setAttribute('value', inp);
+       //document.getElementById("myForm").submit();
+       console.log("form submitted");
+       //var data = canvas.toDataURL('image/png');
+       //photo.setAttribute('src', data);
+  }
+
+
+
+
+  ########
+                        <label for="input_face"></label>
+                            <input type="hidden" accept="image/png" name="input_face" id="input_face">
+                            <div>
+                              <video id="video" autoplay="true" width="300" height="250" >Video unavailable</video>
+                              <span>
+                                 <button id="startbutton" class="w-100 btn btn-lg btn-primary">Click Photo</button>
+                              </span>
+                              <span>
+                                 <canvas id="canvas" width="640" height="480"> </canvas>
+                              </span>
+                            </div>

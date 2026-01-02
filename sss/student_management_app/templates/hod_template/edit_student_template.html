@@ -1,0 +1,114 @@
+{% extends 'hod_template/base_template.html' %}
+
+{% block page_title %}
+Edit Student
+{% endblock page_title %}
+
+{% block main_content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Edit Student Details</h3>
+                    </div>
+                    <form role="form" method="POST" action="{% url 'edit_student_save' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        
+                        {% if messages %}
+                        <div class="col-12">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>First Name</label>
+                                        {{ form.first_name }}
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Middle Name</label>
+                                        {{ form.middle_name }}
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Last Name</label>
+                                        {{ form.last_name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Gender</label>
+                                        {{ form.gender }}
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date of Birth</label>
+                                        {{ form.date_of_birth }}
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Profile Picture</label>
+                                        {{ form.student_image }}
+                                        {% if student.profile_pic %}
+                                        <img src="{{ student.profile_pic.url }}" style="max-width: 100px;" />
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Residential Address</label>
+                                        {{ form.residential_address }}
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nationality</label>
+                                        {{ form.nationality }}
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Religion</label>
+                                        {{ form.religion }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Disability</label>
+                                        {{ form.disability }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Grade</label>
+                                        {{ form.grade_id }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Stream</label>
+                                        {{ form.stream_id }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Academic Year</label>
+                                        {{ form.academic_year_id }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">Update Student</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock main_content %}

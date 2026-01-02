@@ -1,0 +1,261 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Merriweather', serif;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      box-sizing: border-box;
+      color: #777777;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      width: 900px;
+      max-width: 100%;
+      height: 600px;
+      box-shadow: 0 8px 20px rgba(58, 117, 233, 0.3);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .welcome-side {
+      flex: 1;
+      background: #3A75E9;
+      position: relative;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .welcome-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(58, 117, 233, 0.7);
+      z-index: 1;
+    }
+
+    .welcome-content {
+      position: relative;
+      z-index: 2;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 10px rgba(0,0,0,0.5);
+      max-width: 80%;
+    }
+
+    .welcome-content p {
+      font-style: italic;
+    }
+
+    .login-side {
+      flex: 1;
+      padding: 3rem 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .login-container h2 {
+      margin-bottom: 2rem;
+      font-weight: 700;
+      font-size: 1.8rem;
+      letter-spacing: 0.05em;
+      color: #3A75E9;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      border: 1.5px solid #cccccc;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #777777;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s ease;
+      box-shadow: none;
+      font-family: 'Merriweather', serif;
+    }
+
+    input[type="text"]::placeholder,
+    input[type="password"]::placeholder {
+      color: #aaaaaa;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: #3A75E9;
+      box-shadow: 0 0 8px #3A75E9;
+    }
+
+    /* Added container for password input and toggle */
+    .password-container {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .password-container input[type="password"],
+    .password-container input[type="text"] {
+      padding-right: 2.5rem; /* space for the toggle icon */
+    }
+
+    .toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      fill: #777777;
+      transition: fill 0.3s ease;
+    }
+
+    .toggle-password:hover {
+      fill: #3A75E9;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #3A75E9;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition:background 0.3s ease;
+      box-shadow: 0 0 15px #3A75E9;
+      font-family: 'Merriweather', serif;
+    }
+
+    button:hover {
+      background: #2e5bb8;
+      box-shadow: 0 0 20px #2e5bb8;
+    }
+
+    .forgot-password {
+      margin-top: 1rem;
+      text-align: right;
+    }
+
+    .forgot-password a {
+      color: #3A75E9;
+      font-weight: 500;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-family: 'Merriweather', serif;
+    }
+
+    .forgot-password a:hover {
+      color: #2e5bb8;
+      text-decoration: underline;
+    }
+
+    .alert {
+      margin-top: 1rem;
+      background: #e6f0ff;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      color: #2e5bb8;
+      font-weight: 700;
+      border: 1px solid #2e5bb8;
+      font-family: 'Merriweather', serif;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        height: auto;
+      }
+      .welcome-side {
+        height: 200px;
+      }
+      .login-side {
+        padding: 2rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="welcome-side">
+      <div class="welcome-overlay"></div>
+      <div class="welcome-content">
+        <h1>Welcome to Student Security and Attendance Monitoring System</h1>
+        <p>Secure Entry, Smart Attendance</p>
+      </div>
+    </div>
+    <div class="login-side">
+      <div class="login-container">
+        <h2>Sign In</h2>
+        <form method="post" action="{% url 'doLogin' %}">
+          {% csrf_token %}
+          <input type="text" name="email" placeholder="Email" required autofocus />
+          <div class="password-container">
+            <input type="password" name="password" placeholder="Password" required id="password" />
+            <svg class="toggle-password" id="togglePassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+              <circle cx="12" cy="12" r="2.5"/>
+            </svg>
+          </div>
+          <div class="forgot-password">
+            <a href="{% url 'password_reset' %}">Forgot Password?</a>
+          </div>
+          <button type="submit">Log In</button>
+          {% if messages %}
+          <div class="alert" role="alert">
+            {% for message in messages %}
+              {% if message.tags == "error" %}
+                {{ message }}
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#password');
+
+    togglePassword.addEventListener('click', function () {
+      // toggle the type attribute
+      const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+      password.setAttribute('type', type);
+      // toggle the icon fill color
+      this.classList.toggle('active');
+    });
+  </script>
+</body>
+</html>
